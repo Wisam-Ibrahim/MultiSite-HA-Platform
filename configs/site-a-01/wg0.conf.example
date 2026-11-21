@@ -1,0 +1,9 @@
+[Interface]
+Address = 10.10.10.1/24
+ListenPort = 51820
+
+[Peer]
+Publickey = Crf6lt7yboXX7fjBYPKCFPCCJCxG9MWLfd7STyRN40A=
+Endpoint = 192.168.16.103:51820
+AllowedIPs = 10.10.10.2/32, 192.168.20.0/24
+PersistentKeepalive = 25

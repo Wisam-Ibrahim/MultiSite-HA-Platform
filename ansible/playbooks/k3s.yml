@@ -1,0 +1,49 @@
+---
+- name: K3s first server (cluster-init)
+  hosts: ms-site-a-01
+  become: true
+  vars:
+    k3s_version: "v1.37.2+k3s1"
+    k3s_token: "{{ lookup('file', '~/secrets/k3s-token') | trim }}"
+  tasks:
+    - name: Check if k3s is installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_bin
+
+    - name: Install k3s first server
+      ansible.builtin.shell: >
+        curl -sfL https://get.k3s.io |
+        INSTALL_K3S_VERSION={{ k3s_version }}
+        K3S_TOKEN={{ k3s_token }}
+        sh -s - server --cluster-init
+        --node-ip 192.168.16.101
+        --tls-san 192.168.16.101
+        --disable traefik --disable servicelb
+      when: not k3s_bin.stat.exists
+      no_log: true
+
+- name: K3s joining servers
+  hosts: ms-site-a-02,ms-site-b-01
+  become: true
+  serial: 1
+  vars:
+    k3s_version: "v1.37.2+k3s1"
+    k3s_token: "{{ lookup('file', '~/secrets/k3s-token') | trim }}"
+  tasks:
+    - name: Check if k3s is installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_bin
+
+    - name: Join k3s server
+      ansible.builtin.shell: >
+        curl -sfL https://get.k3s.io |
+        INSTALL_K3S_VERSION={{ k3s_version }}
+        K3S_TOKEN={{ k3s_token }}
+        sh -s - server
+        --server https://192.168.16.101:6443
+        --node-ip {{ ansible_host }}
+        --disable traefik --disable servicelb
+      when: not k3s_bin.stat.exists
+      no_log: true

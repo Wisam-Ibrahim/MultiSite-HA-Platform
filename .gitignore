@@ -1,0 +1,14 @@
+# Secrets - never commit
+*.key
+*.pem
+privatekey
+publickey
+*.tfstate
+*.tfstate.*
+.terraform/
+.env
+*.retry
+secrets/
+# OS / editor
+Thumbs.db
+.vscode/

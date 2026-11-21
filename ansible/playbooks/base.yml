@@ -1,0 +1,31 @@
+---
+- name: Base setup for all VMs
+  hosts: all
+  become: true
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name: [curl, wget, git, vim, python3]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+- name: Routers (A-01 and B-01)
+  hosts: routers
+  become: true
+  tasks:
+    - name: Install wireguard-tools
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+
+    - name: Enable IP forwarding (persistent)
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/99-ip-forward.conf
+        content: "net.ipv4.ip_forward=1\n"
+        mode: "0644"
+      register: fwd
+
+    - name: Apply sysctl now
+      ansible.builtin.command: sysctl -p /etc/sysctl.d/99-ip-forward.conf
+      when: fwd.changed

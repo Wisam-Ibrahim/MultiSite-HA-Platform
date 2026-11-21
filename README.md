@@ -1,28 +1,48 @@
 ﻿# Automated Multi-Site Infrastructure with Kubernetes High Availability
 
-University project: two virtual sites connected by a WireGuard VPN, with a 3-node K3s cluster (embedded etcd, HA), a floating IP with load balancing, and Prometheus/Grafana monitoring. Built and automated with Ansible and Terraform.
+Two virtual sites joined by a WireGuard VPN, a 3-node K3s cluster (embedded etcd), a floating IP (keepalived), and Prometheus/Grafana monitoring. Automated with Ansible and Terraform.
 
-## Environment
-- Host: Windows 11, VMware Workstation Pro, 16 GB RAM
-- 3 VMs: Ubuntu Server 26.04.1 LTS (MS-SITE-A-01, MS-SITE-A-02, MS-SITE-B-01), 2 vCPU and about 2.5 GB RAM each
-- Control node: Ubuntu 24.04 in WSL2 (Ansible, Terraform)
+## Architecture
+```
+            Windows 11 host (VMware, VMnet8 NAT 192.168.16.0/24)
+                    VIP 192.168.16.100 (keepalived)
+   +----------------------+          +----------------------+
+   | SITE A 192.168.10/24 |  WireGuard| SITE B 192.168.20/24 |
+   | A-01 .10.1 (router)  |<========>| B-01 .20.1 (router)  |
+   | A-02 .10.2           | 10.10.10.x|                      |
+   +----------------------+          +----------------------+
+   K3s servers: A-01 .16.101, A-02 .16.102, B-01 .16.103
+```
 
-## Roadmap
-| # | Phase | Status |
-|---|-------|--------|
-| 1 | Inspect existing VMs and setup | Done |
-| 2 | VMware networks and Ubuntu servers | Done |
-| 3 | Site A / Site B networking | Done |
-| 4 | WireGuard VPN | Done |
-| 5 | Terraform and Ansible | Done |
-| 6 | Docker and sample application | Done |
-| 7 | K3s cluster | Done |
-| 8 | High Availability and Load Balancing | Done |
-| 9 | Prometheus and Grafana | Done |
-| 10 | Full system testing | Done |
-| 11 | Automated deploy and health check | Done |
-| 12 | Final documentation and presentation | Pending |
+## Components
+| Layer | Tool |
+|-------|------|
+| Networking | Netplan, static routes, WireGuard (10.10.10.0/24) |
+| Orchestration | K3s v1.37.2, 3 servers, embedded etcd |
+| Load balancing | kube-proxy NodePort + keepalived VIP |
+| Monitoring | node-exporter, Prometheus 2.53.0, Grafana 11.1.0 |
+| Automation | Ansible (site.yml), Terraform (inventory generation) |
 
-Details for each phase are in the docs folder.
+## Run
+From WSL (control node):
+```
+cd ansible
+ansible-playbook playbooks/site.yml
+bash ../scripts/healthcheck.sh
+```
 
-Secrets (WireGuard private keys, K3s token, VRRP and Grafana passwords) are kept outside this repository.
+## Phases
+See docs/phase-01 to docs/phase-11.
+
+## Verified results
+- Health check: 9 of 9 PASS.
+- Full VM power-off of A-01: VIP moved to A-02, 10 of 10 requests answered, API stayed up with 2 of 3 etcd members; everything returned by itself after power-on.
+
+## Known limitations
+- WireGuard gateway of each site is a single point of failure (Site A lost Site B access while A-01 was down).
+- Prometheus and Grafana are single replicas on emptyDir (data not persistent).
+- Netplan, WireGuard keys and VM creation are not automated; site.yml was verified on a running system, not as a rebuild from scratch.
+- Ubuntu on the VMs is 26.04.1.
+
+## Secrets
+WireGuard keys, K3s token, VRRP and Grafana passwords live outside the repository (.gitignore).

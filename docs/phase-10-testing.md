@@ -16,7 +16,10 @@
 
 ## Honest notes
 - Two earlier attempts were invalid because A-01 had not actually been powered off (ping still answered); they are not used as evidence.
-- Earlier test (Phase 8) stopped only services, this one is a full VM power-off.
+- The Phase 8 test stopped only services; this one is a full VM power-off.
+
+## Screenshots
+docs/screenshots/grafana-cpu.png and grafana-cpu2.png
 
 ## Future improvements
 - Second WireGuard gateway or a floating IP for the site router.

@@ -2,7 +2,7 @@
 [${site}]
 %{ for name, h in hosts ~}
 %{ if h.site == site ~}
-${name} ansible_host=${h.ip} ansible_user=${h.user}
+${name} ansible_host=${h.ip} ansible_user=${h.user} vrrp_if=${h.vrrp_if} vrrp_state=${h.vrrp_state} vrrp_prio=${h.vrrp_prio}
 %{ endif ~}
 %{ endfor ~}
 

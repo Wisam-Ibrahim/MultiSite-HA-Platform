@@ -1,0 +1,35 @@
+---
+- name: keepalived floating IP
+  hosts: all
+  become: true
+  vars:
+    vrrp_pass: "{{ lookup('file', '~/secrets/vrrp-pass') | trim }}"
+  tasks:
+    - name: Install keepalived
+      ansible.builtin.apt:
+        name: keepalived
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Configure keepalived
+      ansible.builtin.template:
+        src: templates/keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: "0600"
+      notify: Restart keepalived
+      no_log: true
+
+    - name: Enable and start keepalived
+      ansible.builtin.systemd:
+        name: keepalived
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart keepalived
+      ansible.builtin.systemd:
+        name: keepalived
+        state: restarted

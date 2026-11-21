@@ -1,0 +1,41 @@
+---
+- name: Docker and sample app on A-02
+  hosts: ms-site-a-02
+  become: true
+  tasks:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create web content directory
+      ansible.builtin.file:
+        path: /opt/webapp
+        state: directory
+        mode: "0755"
+
+    - name: Copy index page
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /opt/webapp/index.html
+        mode: "0644"
+
+    - name: Check if webapp container exists
+      ansible.builtin.command: docker inspect webapp
+      register: webapp_check
+      changed_when: false
+      failed_when: false
+
+    - name: Run nginx container
+      ansible.builtin.command: >
+        docker run -d --name webapp --restart unless-stopped
+        -p 8080:80 -v /opt/webapp:/usr/share/nginx/html:ro nginx:alpine
+      when: webapp_check.rc != 0

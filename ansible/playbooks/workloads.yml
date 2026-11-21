@@ -1,0 +1,37 @@
+---
+- name: Deploy Kubernetes workloads
+  hosts: ms-site-a-01
+  become: true
+  tasks:
+    - name: Copy webapp manifest
+      ansible.builtin.copy:
+        src: "../../k8s/webapp.yaml"
+        dest: /tmp/webapp.yaml
+        mode: "0644"
+
+    - name: Copy monitoring manifest
+      ansible.builtin.copy:
+        src: "../../k8s/monitoring.yaml"
+        dest: /tmp/monitoring.yaml
+        mode: "0644"
+
+    - name: Create monitoring namespace
+      ansible.builtin.shell: k3s kubectl create namespace monitoring --dry-run=client -o yaml | k3s kubectl apply -f -
+      register: ns_out
+      changed_when: "'created' in ns_out.stdout"
+
+    - name: Create Grafana admin secret
+      ansible.builtin.shell: k3s kubectl -n monitoring create secret generic grafana-admin --from-literal=password={{ lookup('file','~/secrets/grafana-pass') | trim }} --dry-run=client -o yaml | k3s kubectl apply -f -
+      register: sec_out
+      changed_when: "'created' in sec_out.stdout"
+      no_log: true
+
+    - name: Apply webapp
+      ansible.builtin.command: k3s kubectl apply -f /tmp/webapp.yaml
+      register: web_out
+      changed_when: "web_out.stdout_lines | reject('search', 'unchanged$|^namespace/monitoring configured$') | list | length > 0"
+
+    - name: Apply monitoring
+      ansible.builtin.command: k3s kubectl apply -f /tmp/monitoring.yaml
+      register: mon_out
+      changed_when: "mon_out.stdout_lines | reject('search', 'unchanged$|^namespace/monitoring configured$') | list | length > 0"

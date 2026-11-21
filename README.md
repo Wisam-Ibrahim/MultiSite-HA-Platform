@@ -19,8 +19,8 @@ University project: two virtual sites connected by a WireGuard VPN, with a 3-nod
 | 7 | K3s cluster | Done |
 | 8 | High Availability and Load Balancing | Done |
 | 9 | Prometheus and Grafana | Done |
-| 10 | Full system testing | In progress |
-| 11 | Automated deploy and rebuild | Pending |
+| 10 | Full system testing | Done |
+| 11 | Automated deploy and health check | Done |
 | 12 | Final documentation and presentation | Pending |
 
 Details for each phase are in the docs folder.

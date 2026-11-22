@@ -1,0 +1,64 @@
+---
+- name: WireGuard tunnel between the site routers
+  hosts: routers
+  become: true
+  vars:
+    wg:
+      ms-site-a-01: { address: 10.10.10.1, endpoint: 192.168.16.101, allowed: "10.10.10.1/32, 192.168.10.0/24" }
+      ms-site-b-01: { address: 10.10.10.2, endpoint: 192.168.16.103, allowed: "10.10.10.2/32, 192.168.20.0/24" }
+    wg_peer: "{{ groups['routers'] | difference([inventory_hostname]) | first }}"
+  tasks:
+    - name: Install wireguard-tools
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+
+    - name: Create /etc/wireguard
+      ansible.builtin.file:
+        path: /etc/wireguard
+        state: directory
+        mode: "0700"
+
+    - name: Generate key pair only if missing
+      ansible.builtin.shell: umask 077; wg genkey | tee /etc/wireguard/privatekey | wg pubkey > /etc/wireguard/publickey
+      args:
+        creates: /etc/wireguard/privatekey
+
+    - name: Read public key
+      ansible.builtin.slurp:
+        src: /etc/wireguard/publickey
+      register: pub_raw
+
+    - name: Read private key
+      ansible.builtin.slurp:
+        src: /etc/wireguard/privatekey
+      register: priv_raw
+      no_log: true
+
+    - name: Keep keys as facts
+      ansible.builtin.set_fact:
+        wg_public: "{{ pub_raw.content | b64decode | trim }}"
+        wg_private: "{{ priv_raw.content | b64decode | trim }}"
+      no_log: true
+
+    - name: Write wg0.conf
+      ansible.builtin.template:
+        src: templates/wg0.conf.j2
+        dest: /etc/wireguard/wg0.conf
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+      notify: Restart wg0
+
+    - name: Enable and start wg-quick@wg0
+      ansible.builtin.systemd:
+        name: wg-quick@wg0
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart wg0
+      ansible.builtin.systemd:
+        name: wg-quick@wg0
+        state: restarted

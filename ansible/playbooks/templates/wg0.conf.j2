@@ -1,0 +1,10 @@
+[Interface]
+Address = {{ wg[inventory_hostname].address }}/24
+ListenPort = 51820
+PrivateKey = {{ wg_private }}
+
+[Peer]
+PublicKey = {{ hostvars[wg_peer].wg_public }}
+Endpoint = {{ wg[wg_peer].endpoint }}:51820
+AllowedIPs = {{ wg[wg_peer].allowed }}
+PersistentKeepalive = 25

@@ -1,0 +1,23 @@
+---
+- name: Deploy Netplan configuration
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Netplan file for this host
+      ansible.builtin.copy:
+        src: "../../configs/{{ inventory_hostname | replace('ms-', '') }}/00-installer-config.yaml"
+        dest: /etc/netplan/00-installer-config.yaml
+        owner: root
+        group: root
+        mode: "0600"
+        backup: true
+      register: netplan_file
+
+    - name: Validate Netplan syntax
+      ansible.builtin.command: netplan generate
+      changed_when: false
+      when: netplan_file.changed
+
+    - name: Apply Netplan
+      ansible.builtin.command: netplan apply
+      when: netplan_file.changed

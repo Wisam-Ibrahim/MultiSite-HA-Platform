@@ -41,8 +41,9 @@ See docs/phase-01 to docs/phase-11.
 ## Known limitations
 - WireGuard gateway of each site is a single point of failure (Site A lost Site B access while A-01 was down).
 - Prometheus and Grafana are single replicas on emptyDir (data not persistent).
-- Netplan, WireGuard keys and VM creation are not automated; site.yml was verified on a running system, not as a rebuild from scratch.
+- VM creation is not automated, and a rebuild of a node from scratch has not been tested yet. Netplan and WireGuard are now automated (phase 13).
 - Ubuntu on the VMs is 26.04.1.
 
 ## Secrets
 WireGuard keys, K3s token, VRRP and Grafana passwords live outside the repository (.gitignore).
+
